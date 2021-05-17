@@ -1,78 +1,43 @@
+from signalslot import *
+from collections import defaultdict
+import time
+import threading
+
 from Sender import *
 from Receiver import *
-import signalslot
-
-# 1 - Generate Node 1 data
-id = "node1"
-ip = "n.o.d.e.1"
-port = '80'
-message = "payload one"
-destination_ip = "matcher one"
-destination_port = "80"
 
 
-# Generate Matcher 1 data
-id1 = "node2"
-ip1 = "n.o.d.e.2"
-port1 = '80'
-message1 = "request received"
-destination1 = "matcher two"
 
+def thread_function(node):
+    for _ in range(2):
+        time.sleep(1)
+        node.send(msg=Message(type='pub',channel='ab', payload='message in thread'))
+        
 
-n1 = NodeExample(id, ip, port, message)
-n1.pubsend(destination_ip, destination_port)
-
-n2 = MatcherExample(id1, ip1, port1, message1)
-n2.sender(destination1, destination_port)
-
-
-# #create destination signal
-# destinationsignal = signalslot.Signal()
-
-
-# def destination(**kwargs):
-#     n2 = MatcherExample(id, ip, port, message)
-#     # n2.send(destination_ip, destination_port)
-#     return n1
+def main():
+    nodes = [Node(id='1'), Node(id='2'), Node(id='4')]
+    matcher = Matcher(id='3')
     
-     #print(n1)
-# # Node1 ---> {connector} ---> Matcher1
-# def sendernode(**kwargs):
-#     n1 = NodeExample(id, ip, port, message)
-#     n1.send(destination_ip, destination_port)
-#     # return n1
-#     #print(n1)
+    # nodes connect to matcher
+    for node in nodes:
+        matcher.connect(node) #fix
 
-# # Connect function to signal
-# signal1.connect(sendernode)
+    nodes[0].send(msg=Message(type='sub',channel='ab'))
+    nodes[1].send(msg=Message(type='sub',channel='ab'))
+    nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is the first message'))
 
-# #emit/broadcast signal
-# # s1 = {}
-# s1 = signal1.emit()
+    threads = []
 
-# print(s1)
+    for node in nodes:
+        x = threading.Thread(target=thread_function, args=(node,))
+        threads.append(x)
+        x.start()
 
-# # x2 = s1.is_connected(sendernode)
-# # print(x2)
-
-
-# def receivernode(**kwargs):
-#     n2 = NodeExample(id, ip, port, message)
-#     n2.send(destination_ip, destination_port) 
+    for thread in threads:
+        thread.join()
 
 
 
-
-#disconnect
-# print(signal1)
-# n1.is_connected(sendernode)
-
-
-# Connect Node 1 to matcher 1
-
-#subscribe to specific destination
-
-# print(n1)
-
-# m1 = NodeExample(id, ip, port, message, destination)
-# m1.main(destination)
+if __name__ == '__main__':
+    main()
+    print('program exitted')
