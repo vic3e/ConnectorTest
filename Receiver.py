@@ -28,11 +28,29 @@ class Matcher(object):
                     print(f'subscriber id: {message.sender_id} to channel: {mc}')
                     self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
                     self.nodes[message.sender_id].can_publish(False) # for test only
-
+            
             elif message.type == 'pub':
                 if mc in self.channel_signals:
                     print(f'publisher id: {message.sender_id} to channel: {mc}')
                     self.channel_signals[mc].emit(message = message)
+
+
+            elif message.type == 'spatialsub':
+                if mc not in self.channel_signals: # to avoid existing channel signal to be recreated/check for duplicate
+                    self.channel_signals[mc] = Signal()
+                    self.nodes[message.sender_id].can_publish(False) # for test only
+                    self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
+                    print(f'\nSpatial subscriber id: {message.sender_id} to area code: {mc}')
+                else:
+                    print(f'\nSpatial subscriber ids: {message.sender_id} to area code: {mc}')
+                    self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
+                    self.nodes[message.sender_id].can_publish(False) # for test only
+            
+            elif message.type == 'spatialpub':
+                if mc in self.channel_signals:
+                    print(f'Spatial publisher id: {message.sender_id} to area: {mc}')
+                    self.channel_signals[mc].emit(message = message)
+
             else:
                 print('unknown message type')
     

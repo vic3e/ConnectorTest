@@ -9,14 +9,15 @@ from Receiver import *
 
 
 def thread_function(node):
-    for _ in range(2):
-        time.sleep(1)
+    for _ in range(1):
+        time.sleep(5)
         node.send(msg=Message(type='pub',channel='ab', payload='message in thread'))
         
 
 def main():
-    nodes = [Node(id='1'), Node(id='2'), Node(id='4')]
+    nodes = [Node(id='1'), Node(id='2'), Node(id='4'), Node(id='5'), Node(id='6')]
     matcher = Matcher(id='3')
+    matcher = Matcher(id='7')
     
     # nodes connect to matcher
     for node in nodes:
@@ -25,6 +26,9 @@ def main():
     nodes[0].send(msg=Message(type='sub',channel='ab'))
     nodes[1].send(msg=Message(type='sub',channel='ab'))
     nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is the first message'))
+    
+    nodes[3].send(msg=Message(type='spatialsub', channel='areax'))
+    nodes[4].send(msg=Message(type='spatialpub', channel='areax', payload='this is the Spatial message'))
 
     threads = []
 
