@@ -51,6 +51,7 @@ class Matcher(object):
                     print(f'Spatial publisher id: {message.sender_id} to area: {mc}')
                     self.channel_signals[mc].emit(message = message)
 
+                    
             else:
                 print('unknown message type')
     
@@ -60,11 +61,12 @@ class Matcher(object):
 
 
 class Message(object):
-    def __init__(self, type, channel, payload='', id=''):
+    def __init__(self, type, channel='', payload='', id='', area=''):
         self.sender_id = id # needed?
         self.type = type
         self.channel = channel
         self.payload = payload
+        self.area = area
 
     def set_id(self, id):
         self.sender_id = id
