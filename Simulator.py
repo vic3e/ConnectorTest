@@ -17,20 +17,23 @@ def thread_function(node):
 def main():
     nodes = [Node(id='1'), Node(id='2'), Node(id='4'), Node(id='5'), Node(id='6'), Node(id='7')]
     matcher = Matcher(id='3')
-    matcher = Matcher(id='7')
+    
+    # matcher = Matcher(id='7', coverage=(100,-100))
     
     # nodes connect to matcher
     for node in nodes:
         matcher.connect(node) #fix
 
-    nodes[0].send(msg=Message(type='sub',channel='ab'))
-    nodes[1].send(msg=Message(type='sub',channel='ab'))
-    nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is the first message'))
+    nodes[0].send(msg=Message(type='sub',channel='ab', position='', radius=''))
+    nodes[1].send(msg=Message(type='sub',channel='ab', position='', radius=''))    
+    nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is node channel pub message'))
     
-    nodes[3].send(msg=Message(type='spatialsub', channel='areax'))
-    nodes[4].send(msg=Message(type='spatialpub', channel='areax', payload='this is the Spatial message'))
 
-    nodes[5].send(msg=Message(type='spatialsub', area='areax'))
+    nodes[3].send(msg=Message(type='spatialsub', position=(10,10), radius='5'))
+    nodes[4].send(msg=Message(type='spatialsub', position=(10,30), radius='10'))
+    nodes[5].send(msg=Message(type='spatialpub', channel='areax', payload='this is node Spatial message'))
+
+    
 
     threads = []
 

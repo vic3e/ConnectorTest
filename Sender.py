@@ -37,18 +37,19 @@ class Node(object):
     #     return get_id, channel, Message
 
 class Message(object):
-    def __init__(self, type, channel='', payload='', id='', area=''):
+    def __init__(self, type, channel='', payload='', id='', position=(), radius=''):
         self.sender_id = id # needed?
         self.type = type
         self.channel = channel
         self.payload = payload
-        self.area = area
+        self.position = position
+        self.radius = radius
 
     def set_id(self, id):
         self.sender_id = id
     
-    def nodearea(self):
-        return self.radius**2*3.14
+    # def nodearea(self):
+    #     return self.radius**2*3.14
     
-    def perimeter(self):
-        return 2*self.radius*3.14
+    # def perimeter(self):
+    #     return 2*self.radius*3.14
