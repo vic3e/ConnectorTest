@@ -10,18 +10,19 @@ class Matcher(object):
         self.id = id
         self.channel_signals = {} # {'channel': <signal_for_channel> }
         self.nodes = {} # {'node.id': <node> }
+
         self.subscriber_ids = {}
         self.publisher_ids = {}
-
         
 
 
     def handle_message(self,message, **kwargs):
         
-        # print ('these are the node lists', self.nodes('radius'), 'and these are the channel signals', self.channel_signals)
+        # print ('these are the node lists', self.nodes, 'and these are the channel signals', self.channel_signals)
 
         with self.lock:
             mc = message.channel
+            
             mp = message.position
             mr = message.radius
 
@@ -50,9 +51,9 @@ class Matcher(object):
                     # self.overlap() - overlap check
 
                     #get 
-                    print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
+                    # print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
                 else:
-                    print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
+                    # print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
                     self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
                     self.nodes[message.sender_id].can_publish(False) # for test only
             
@@ -94,6 +95,7 @@ class Matcher(object):
             
         elif d > rn:
             print ("Nodes do not overlap, no match")
+        return 
 
 class Message(object):
     def __init__(self, type, channel='', payload='', id='', position=(), radius=''):
