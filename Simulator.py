@@ -29,9 +29,9 @@ def main():
     nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is node channel pub message'))
     
 
-    nodes[3].send(msg=Message(type='spatialsub', position=(10,10), radius='5'))
-    nodes[4].send(msg=Message(type='spatialsub', position=(10,30), radius='10'))
-    nodes[5].send(msg=Message(type='spatialpub', channel='areax', payload='this is node Spatial message'))
+    nodes[3].send(msg=Message(type='spatialsub', position=(15,15), radius='5'))
+    nodes[4].send(msg=Message(type='spatialsub', position=(45,15), radius='10'))
+    nodes[5].send(msg=Message(type='spatialpub', position=(25,15), payload='this is node Spatial message'))
 
     
 

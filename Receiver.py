@@ -18,7 +18,7 @@ class Matcher(object):
 
     def handle_message(self,message, **kwargs):
         
-        print ('these are the node lists', self.nodes, 'and these are the channel signals', self.channel_signals)
+        # print ('these are the node lists', self.nodes('radius'), 'and these are the channel signals', self.channel_signals)
 
         with self.lock:
             mc = message.channel
@@ -57,6 +57,8 @@ class Matcher(object):
                     self.nodes[message.sender_id].can_publish(False) # for test only
             
             elif message.type == 'spatialpub':
+                # Check
+                print(f'radius is: {message.radius}, and  position is {message.position}, where x is {message.position[0]} and y is {message.position[1]}')
                 if mc in self.channel_signals:
                     print(f'Spatial publisher id: {message.sender_id} to area: {mc}')
                     self.channel_signals[mc].emit(message = message)

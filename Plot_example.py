@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
+import math
 # from shapely.geometry import box
 
 
@@ -18,12 +19,12 @@ n1_cor = (15,15)
 # print(n1_cor[1])
 n1_rad = 10
 
-n2_cor = (30, 25)
+n2_cor = (25, 15)
 n2_rad = 10
 
 
-n3_cor = (30, 50)
-n3_rad = 15
+n3_cor = (45, 15)
+n3_rad = 10
 
 
 plt.axes()
@@ -48,19 +49,25 @@ plt.gca().add_patch(node3)
 plt.axis('scaled')
 plt.show()
 
-if  (n1_cor <= (120, 100)):# and n2_cor[1] <= n2_cor[2]:
-    print ('match found in matcher 1 area')
-else:    
-    print ('no match')
-    
-    
-if (n2_cor <= (240, 100)):
-    print ('match found in matcher 2 area')
-else:
-    print('no match found in matcher 2')
-    
 
+def overlap(x1, x2, y1, y2, r1, r2):
     
+    d = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+    print(d)
+    
+    rn = r1 +r2
+    print(rn)
+    
+    if d < rn:
+        print('Node area 1 overlaps with Node area 2')
+    
+    elif d == rn:
+        print("Nodes are touching, no match")
+        
+    elif d > rn:
+        print ("Nodes do not overlap, no match")
+    
+overlap(25, 45, 15, 15, 10, 10)    
     
 # circle = plt.Circle((0, 0), 0.75, fc='y')
 # plt.gca().add_patch(circle)
