@@ -1,18 +1,26 @@
 from signalslot import *
-from collections import defaultdict
+# from collections import defaultdict
+from collections import namedtuple
 import time
 import threading
 import math
+
+from message import *
+LocationId =  namedtuple('LocationId', 'node_id location') # workaround for now
 
 class Matcher(object):
     def __init__(self, id):
         self.lock = threading.Lock()
         self.id = id
+       
         self.channel_signals = {} # {'channel': <signal_for_channel> }
+
         self.nodes = {} # {'node.id': <node> }
 
-        self.subscriber_ids = {}
-        self.publisher_ids = {}
+        self.subscriber_locations = []
+        # self.publisher_ids = {}
+
+        # self.spatialsublist = {}
         
 
 
@@ -20,91 +28,88 @@ class Matcher(object):
         
         # print ('these are the node lists', self.nodes, 'and these are the channel signals', self.channel_signals)
 
-        with self.lock:
-            mc = message.channel
+        #with self.lock:
+        mc = message.channel
             
-            mp = message.position
-            mr = message.radius
+            # mp = message.position
+            # mr = message.radius
+
+        if message.type == 'sub':
+               #append to sub dictionary
+            if mc == '':
+                print('spatial sub saved')
+                self.subscriber_locations.append(LocationId(node_id=message.sender_id, location=message.location)) # {subscriber identification: 1, location}
+
+            if mc not in self.channel_signals and mc: # to avoid existing channel signal to be recreated/check for duplicate
+                self.channel_signals[mc] = Signal()
+                self.nodes[message.sender_id].can_publish(False) # for test only
+                self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
+                print(f'subscriber: {message.sender_id} makes request to channel: {mc}')
+
+            elif mc in self.channel_signals:
+                print(f'subscriber id: {message.sender_id} to channel: {mc}')
+                self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot()) #connect signal to slot
+                self.nodes[message.sender_id].can_publish(False) # for test only
+            
+        elif message.type == 'pub':
+            if mc == '':
+                for subloc in self.subscriber_locations:
+                    print('SUB', subloc)
+                    if self.overlap(subloc.location, message.location):
+                        publisher = self.nodes.get(message.sender_id) # get pub from nodes
+                        subscriber = self.nodes.get(subloc.node_id)
+                        print('SUBSCR:', subscriber)
+                        print('PUBL: ', publisher)
+                        
+
+                        if publisher is not None and subscriber is not None:
+                            print('in if for: ')
+                            print('in if for: ')
+
+                            publisher.connect(subscriber.get_slot())
+                            print('exit if slot: ')
+
+                            # with self.lock:
+                            # publisher.send(msg=message)
+                            # print('exit if for: ')
+                            
 
 
-            if message.type == 'sub':
-                if mc not in self.channel_signals: # to avoid existing channel signal to be recreated/check for duplicate
-                    self.channel_signals[mc] = Signal()
-                    self.nodes[message.sender_id].can_publish(False) # for test only
-                    self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
-                    print(f'subscriber: {message.sender_id} makes request to channel: {mc}')
-                else:
-                    print(f'subscriber id: {message.sender_id} to channel: {mc}')
-                    self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
-                    self.nodes[message.sender_id].can_publish(False) # for test only
-            
-            elif message.type == 'pub':
+
+
+             # if mc not in sub dictionary, do nothing
+             # else perform matching
                 if mc in self.channel_signals:
                     print(f'publisher id: {message.sender_id} to channel: {mc}')
-                    self.channel_signals[mc].emit(message = message)
-
-            elif message.type == 'spatialsub':
-                if mp not in self.channel_signals: # to avoid existing channel signal to be recreated/check for duplicate
-                    self.channel_signals[mp] = Signal()
-                    self.nodes[message.sender_id].can_publish(False) # for test only
-                    self.channel_signals[mp].connect(self.nodes[message.sender_id].get_slot())
-                    # self.overlap() - overlap check
-
-                    #get 
-                    # print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
-                else:
-                    # print(f'\nSpatial subscriber id: {message.sender_id} at location {mp} with radius {message.radius} makes request')
-                    self.channel_signals[mc].connect(self.nodes[message.sender_id].get_slot())
-                    self.nodes[message.sender_id].can_publish(False) # for test only
-            
-            elif message.type == 'spatialpub':
-                # Check
-                print(f'radius is: {message.radius}, and  position is {message.position}, where x is {message.position[0]} and y is {message.position[1]}')
-                if mc in self.channel_signals:
-                    print(f'Spatial publisher id: {message.sender_id} to area: {mc}')
                     self.channel_signals[mc].emit(message = message)
 
                     
             else:
                 print('unknown message type')
     
+
     def connect(self, node):
         node.connect(self.handle_message) # allows all nodes (publishers and subscribers) to call handle_message() slot     
         self.nodes[node.get_id()] = node # -this means that subs can publish so long they have the right channel
 
 
-    def overlap(self, x1, x2, y1, y2, r1, r2):
-        self.x1 = x1
-        self.x2 = x2
-        self.y1 = y1
-        self.y2 = y2
-        self.r1 = r1
-        self.r2 = r2
+    def overlap(self, node_one_location, node_two_location): #change variable names
 
-        d = math.sqrt((x1-x2)**2 + (y1-y2)**2)
-        print(d)
+        d = math.sqrt(abs(node_one_location.x_position - node_two_location.x_position)**2 + abs(node_one_location.y_position - node_two_location.y_position)**2)
+        # print(d)
         
-        rn = r1 +r2
-        print(rn)
+        rn = node_one_location.radius + node_two_location.radius
+        print(f'd is {d} and rn is {rn}')
         
         if d < rn:
-            print('Node area 1 overlaps with Node area 2')
-        
+            # print('Node area 1 overlaps with Node area 2')
+            return True # this is the interesting part
         elif d == rn:
-            print("Nodes are touching")
+            # print("Nodes are touching")
+            return False
             
         elif d > rn:
-            print ("Nodes do not overlap, no match")
-        return 
+            # print ("Nodes do not overlap, no match")
+            return False
 
-class Message(object):
-    def __init__(self, type, channel='', payload='', id='', position=(), radius=''):
-        self.sender_id = id # needed?
-        self.type = type
-        self.channel = channel
-        self.payload = payload
-        self.position = position
-        self.radius = radius
 
-    def set_id(self, id):
-        self.sender_id = id

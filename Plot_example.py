@@ -52,7 +52,7 @@ plt.show()
 
 def overlap(x1, x2, y1, y2, r1, r2):
     
-    d = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+    d = math.sqrt(abs((x1-x2))**2 + abs((y1-y2)**2))
     print(d)
     
     rn = r1 +r2
@@ -67,7 +67,7 @@ def overlap(x1, x2, y1, y2, r1, r2):
     elif d > rn:
         print ("Nodes do not overlap, no match")
     
-overlap(25, 45, 15, 15, 10, 10)    
+overlap(15, 25, 15, 15, 10, 10)    
     
 # circle = plt.Circle((0, 0), 0.75, fc='y')
 # plt.gca().add_patch(circle)

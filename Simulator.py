@@ -6,12 +6,13 @@ import threading
 from Sender import *
 from Receiver import *
 
-
+from message import *
 
 def thread_function(node):
     for _ in range(1):
         time.sleep(2)
-        node.send(msg=Message(type='pub',channel='ab', payload='message in thread'))
+        # node.send(msg=Message(type='pub',channel='ab', payload='message in thread'))
+        node.send(msg=Message(type='pub', location=Location(25,15,10), payload='message in thread'))
         
 
 def main():
@@ -24,16 +25,16 @@ def main():
     for node in nodes:
         matcher.connect(node) #fix
 
-    nodes[0].send(msg=Message(type='sub',channel='ab', position='', radius=''))
-    nodes[1].send(msg=Message(type='sub',channel='ab', position='', radius=''))    
-    nodes[2].send(msg=Message(type='pub',channel='ab', payload='this is node channel pub message'))
+    # nodes[0].send(msg=Message(type='sub',channel='ab'))
+    # nodes[1].send(msg=Message(type='sub',channel='ab'))
     
-
-    nodes[3].send(msg=Message(type='spatialsub', position=(15,15), radius='5'))
-    nodes[4].send(msg=Message(type='spatialsub', position=(45,15), radius='10'))
-    nodes[5].send(msg=Message(type='spatialpub', position=(25,15), radius='10', payload='this is node Spatial message')) #add radius
-
+    nodes[3].send(msg=Message(type='sub', location=Location(15,15,10)))
+    # nodes[4].send(msg=Message(type='sub', location=Location(45,15,10)))
     
+    # nodes[2].send(msg=Message(type='pub', channel='ab', payload='this is node channel pub message'))    
+
+    nodes[5].send(msg=Message(type='pub', location=Location(25,15,10), payload='this is node Spatial message')) #fix location, change to location, format is (x,y,r)
+
 
     threads = []
 
