@@ -1,139 +1,128 @@
-from abc import ABC, abstractmethod
-from copy import deepcopy
-import queue
-import socket
+# from abc import ABC, abstractmethod
+# import signalslot
+# from Receiver import *
 
-import logging
+# nodedictionary = {} # Dictionary to store nodes into slots -> {"IPORT": IP n PORT, "Slot"}
 
-interfaces = {} # dictionary to store interfaces -> {"IP:Port", "NetworkInterface"}
-
-
-class NetworkInterface(ABC):
+# destinationdict = {} #
 
 
-    @abstractmethod
-    def connect(self, destinationIP, destinationPort):
-        pass
+# class NetworkInterface(ABC):
+
+#     @abstractmethod
+#     def connect(self):
+#         pass
+
+#     @abstractmethod
+#     def send(self):
+#         pass
+
+#     @abstractmethod
+#     def receive(self):
+#         pass
+
+
+# class RealNetwork(NetworkInterface):
+    
+#     def connect(self, sender_ip, sender_port, destination_ip, destination_port):
+#         pass
+
+#     def send(self):
+#         # connect to something for real
+        
+#         return
+
+#     def receive(self):
+#         # transfer a bunch of data
+#         return
+
+
+# class FakeSocket(object):
+
+#     def __init__(self, fakeip, fakeport, payload):
+#         # SenderIP (signal), SenderPort
+#         self.fakeip = fakeip
+#         self.fakeport = fakeport   
+#         self.payload = payload
 
 
 
-    @abstractmethod
-    def send(self, message):
-        pass
+#     def connect(self, destination_ip, destination_port):
+#         self.destination_ip = destination_ip
+#         self.destination_port = destination_port
 
 
-    @abstractmethod
-    def receive(self, message):
-        pass
+#         nodeid = (self.fakeip, self.fakeport)
+#         destination = (destination_ip, destination_port)
+
+#         # Add signal/request to dictionary
+#         nodedictionary = {"nodesignal":[], "payload":[], "destination":[]}
+#         nodedictionary["nodesignal"].append(self.fakeip)
+#         nodedictionary["payload"].append(self.payload)
+#         nodedictionary["destination"].append(destination_ip)
+
+        
+#         print(nodedictionary["nodesignal"])
+
+#         # Connect function to signal
+#         # self.n_conf.connect(yourmodule_conf)
+#         # lookup destination dictionary
+#         # pass
 
 
-    @abstractmethod
-    def bind(self):
+#     def bind(self):
+#         print('\n*** This is binding process ***')
+        
+#         # print 
+#         m = self.nodedictionary["nodesignal"]
+#         if m == "node1":
 
-        pass
-
-    @abstractmethod
-    def getIP(self):
-        pass
-
-
-    @abstractmethod
-    def getPort(self):
-        pass
-
-
-    @abstractmethod
-    def getNumberOfMessages(self):
-        pass
+#             #note: add argument
+#             m1 = MatcherExample()  #lookup node id
+#             m1.sender(self.destination_ip, self.destination_port)
+        
+#         #     # if self.nodedictionary["destination"] == "matcher one":
+#         #     print("Send payload to matcher one")
 
 
-    @abstractmethod
-    def getMessage(self):
-        pass
+#     def listen(self):
+#         # print(m_conf)
+#         pass
+        
+
+# class FakeNetwork(NetworkInterface):
+
+#     def __init__(self,sender_ip, sender_port, destination_ip, destination_port, payload):
+#         # sender_ip = 127.0.0.1;
+#         self.sender_ip = sender_ip
+#         self.sender_port = sender_port
+#         self.destination_ip = destination_ip
+#         self.destination_port = destination_port
+#         self.payload = payload
+
+#         self.socket = FakeSocket(sender_ip, sender_port, payload)
+#         self.socket.connect(destination_ip, destination_port)
+        
+#         # sender_ip()
+
+#     def connect(self):
+
+#         self.socket.connect(self.sender_ip, self.sender_port)
 
 
-class RealNetworkInterface(NetworkInterface):
-    def __init__(self, senderIP, senderPort):
-        self.senderIP = senderIP
-        self.senderPort = senderPort
-        self.serverSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.receiveQueue = queue.Queue()
 
-    def connect(self, destinationIP, destinationPort):
-        self.clientSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#     def bind(self):
+#         self.socket.bind(self)
+        
+
+#     def listen(self):
+#         self.socket.listen()
 
 
-    def send(self, message):
-        self.clientSock.sendto( (UDP_IP_ADDRESS, UDP_PORT_NO))
-        pass
+#     def send(self, Request):
+        
+#         return
 
+#     def receive(self):
 
-    def receive(self, message):
-        pass
-
-
-    def bind(self):
-        serverSock.bind(self.senderIP, self.senderPort)
-        pass
-
-
-    def getIP(self):
-        pass
-
-
-    def getPort(self):
-        pass
-
-
-    def getNumberOfMessages(self):
-        pass
-
-
-    def getMessage(self):
-        pass
-
-
-class FakeNetworkInterface(NetworkInterface):
-
-
-    def __init__(self, senderIP, senderPort):
-        self.senderIP = senderIP
-        self.senderPort = senderPort
-        self.receiveQueue = queue.Queue()
-
-
-    def connect(self, destinationIP, destinationPort):
-        logging.debug("Connecting (%s:%s) to (%s:%s)" % (self.senderIP, self.senderPort, destinationIP, destinationPort))
-        self.destinationInterface = interfaces[destinationIP+":"+destinationPort]
-
-
-    def bind(self):
-        logging.info("FakeNetworkInterface::bind => Registering (IP:Port) = (%s:%s )" % (self.senderIP, self.senderPort))
-        interfaces[self.senderIP+":"+self.senderPort] = self
-
-
-    def send(self, message):
-        logging.debug("Sending message '%s' to destinationInterface (%s:%s)" % (message, self.destinationInterface.getIP(), self.destinationInterface.getPort()))
-        self.destinationInterface.receive(deepcopy(message))
-
-
-    def receive(self, message):
-        logging.debug("Receive Queue of NIC (%s:%s) has <%d> messages" % (self.senderIP, self.senderPort, self.receiveQueue.qsize()))
-        self.receiveQueue.put(message)
-        logging.debug("Receive Queue of NIC (%s:%s) has <%d> messages" % (self.senderIP, self.senderPort, self.receiveQueue.qsize()))
-
-
-    def getIP(self):
-        return self.senderIP
-
-
-    def getPort(self):
-        return self.senderPort
-
-
-    def getNumberOfMessages(self):
-        return self.receiveQueue.qsize()
-
-
-    def getMessage(self):
-        return self.receiveQueue.get()
+#         return
