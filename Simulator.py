@@ -21,11 +21,6 @@ async def work(node):
 async def simulate(matcher, nodes, loop):
     matcherNodeID = matcher.getNodeID()
 
-    # nodes 'joioniconnect to matcher
-    matcher.registerID()
-    for node in nodes:
-        node.registerID()
-
     # Channel based pub/sub
     logging.info("")
     logging.info("Simulator::main => TESTING CHANNEL-BASED PUB/SUB")
@@ -36,12 +31,12 @@ async def simulate(matcher, nodes, loop):
     matcher.send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    # Node '1' subscribes to channel 'test'
+    # Node '1' subscribes to channel 'test2'
     message = Message(senderNodeID='1', type='sub', channel='test', payload=None)
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    # Node '1' subscribes to channel 'test'
+    # Node '1' subscribes to channel 'test2'
     message = Message(senderNodeID='2', type='sub', channel='test2', payload=None)
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -281,10 +276,30 @@ def main():
 
     VAST = VASTInterface()
     matcherNodeID = '0'
-    matcher = MatcherNode(nodeID=matcherNodeID,
-                          networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1000'),VASTInterface=VAST)
-    nodes = [VASTNode(nodeID='1', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1001'), VASTInterface=VAST),
-             VASTNode(nodeID='2', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1002'), VASTInterface=VAST)]
+
+    RealNetwork = True
+
+    if (RealNetwork):
+        matcher = MatcherNode(nodeID=matcherNodeID, networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12000), VASTInterface=VAST)
+        nodes = [VASTNode(nodeID='1', networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12001), VASTInterface=VAST),
+                 VASTNode(nodeID='2', networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12002), VASTInterface=VAST)]
+
+
+    else:
+        matcher = MatcherNode(nodeID=matcherNodeID,
+                              networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1000'),
+                              VASTInterface=VAST)
+        nodes = [VASTNode(nodeID='1', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1001'),
+                          VASTInterface=VAST),
+                 VASTNode(nodeID='2', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1002'),
+                          VASTInterface=VAST)]
+
+
+    # nodes connect to network infrastructure
+    matcher.registerID()
+    for node in nodes:
+        node.registerID()
+
 
     loop = asyncio.get_event_loop()
     try:
@@ -297,6 +312,7 @@ def main():
         pass
     finally:
         logging.info("Closing Loop")
+
         loop.close()
 
 
