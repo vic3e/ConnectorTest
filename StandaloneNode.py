@@ -17,14 +17,24 @@ async def processReceiveMessage(node):
         node.processSingleMessage()
 
 
-async def publishMessage(node, channel, destinationID, messageNumber):
+async def publishMessage(node, channel, subchannel, destinationID, messageNumber):
+    subscribed = False
     while True:
-        publishTick = random.randint(0,2)
+        publishTick = random.randint(0, 2)
         await asyncio.sleep(publishTick)
-        payload = 'publication message %d' % messageNumber
-        message = Message(senderNodeID=node.getNodeID(), type='pub', channel=channel, payload=payload)
-        node.send(destinationNodeID=destinationID, message=message)
-        messageNumber += 1
+        if (node.getNodeID() != None):
+            logging:info("Have received nodeID <%s>" % node.getNodeID())
+            if (subscribed == False):
+                # Node '1' subscribes to channel 'test2'
+                message = Message(senderNodeID=node.getNodeID(), type='sub', channel=subchannel, payload=None)
+                node.send(destinationNodeID=0, message=message)
+                subscribed = True
+            else:
+
+                payload = 'publication message %d' % messageNumber
+                message = Message(senderNodeID=node.getNodeID(), type='pub', channel=channel, payload=payload)
+                node.send(destinationNodeID=destinationID, message=message)
+                messageNumber += 1
 
 def main(argv):
 
@@ -59,24 +69,25 @@ def main(argv):
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
+    gatewayIP = '127.0.0.1'
+    gatewayPort = 49152
+
     VAST = VASTInterface()
-    matcherNodeID = 12000
-    VAST.join(matcherNodeID, '127.0.0.1',12000)
-    VAST.join(12001, '127.0.0.1',12001)
-    VAST.join(12002, '127.0.0.1',12002)
+    matcherNodeID = 0
+    #VAST.join('127.0.0.1', 49153, matcherNodeID)
+    #VAST.join('127.0.0.1', 49154, 1)
+    #VAST.join('127.0.0.1', 49155, 2)
 
-    node = VASTNode(nodeID=port, networkInterface=RealNetworkInterface(senderIP=IP, senderPort=port), VASTInterface=VAST)
-    node.registerID()
 
-    # Node '1' subscribes to channel 'test2'
-    message = Message(senderNodeID=node.getNodeID(), type='sub', channel=subchannel, payload=None)
-    node.send(destinationNodeID=matcherNodeID, message=message)
+    node = VASTNode(networkInterface=RealNetworkInterface(senderIP=IP, senderPort=port), VASTInterface=VAST)
+    node.initialiseNetworkInterface()
+    node.registerID(gatewayIP, gatewayPort)
 
 
     loop = asyncio.get_event_loop()
     try:
         asyncio.ensure_future(processReceiveMessage(node))
-        asyncio.ensure_future(publishMessage(node, pubchannel, matcherNodeID, 0))
+        asyncio.ensure_future(publishMessage(node, pubchannel, subchannel, matcherNodeID, 0))
         loop.run_forever()
     except KeyboardInterrupt:
         pass

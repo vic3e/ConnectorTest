@@ -1,7 +1,69 @@
 from VAST import VASTInterface
 from collections import defaultdict
-from Message import Message
+from Message import Message, JoinMessage
 import logging
+from Connector import NetworkInterface
+
+class Gateway():
+    def __init__(self, interface):
+        self.interface = interface
+        self.ID = 0
+        self.registeredNodes = {}
+        self.matchers = []
+
+
+    def initialiseNetworkInterface(self):
+        self.interface.bind()
+
+    def processSingleMessage(self):
+
+        #logging.info("Gateway::processSingleMessage => Number of received messages <%d>" % self.interface.getNumberOfMessages())
+        if (self.interface.getNumberOfMessages()):
+            message = self.interface.getMessage()
+            type = message.getType()
+            #logging.info("Gateway::processSingleMessage => Received message of type <%s>" % type)
+            if (type == 'join'):
+                IP = message.getIP()
+                port = message.getPort()
+                nodeID = self.generateID(IP, port)
+                self.registerNode(IP, port, nodeID)
+                message.setRegisteredNodes(self.registeredNodes)
+                for ID in self.registeredNodes:
+                    (nodeIP, nodePort) = self.registeredNodes[ID]
+                    message.setIP(nodeIP)
+                    message.setPort(nodePort)
+                    message.setNodeID(ID)
+                    self.interface.connect(nodeIP, nodePort)
+                    self.interface.send(message)
+            elif (type == 'matcher'):
+                nodeID = message.getNodeID()
+                self.registerMatcher(nodeID)
+            elif (type == 'query'):
+                nodeID = message.getNodeID()
+                (IP, port) = self.queryNodeID(nodeID)
+                message.setIP(IP)
+                message.setPort(port)
+                self.interface.connect(IP, port)
+                self.interface.send(message)
+
+
+    def generateID(self, IP, port):
+        nodeID = self.ID
+        self.ID += 1
+        return nodeID
+
+
+    def registerNode(self, IP, port, nodeID):
+        self.registeredNodes[nodeID] = (IP, port)
+
+
+    def registerMatcher(self, nodeID):
+        self.matchers.append(nodeID)
+
+
+    def queryNodeID(self, nodeID):
+        (IP, port) = self.registeredNodes[nodeID]
+        return (IP, port)
 
 
 class SPSNode(object):
@@ -49,17 +111,23 @@ class SPSNode(object):
 class VASTNode(object):
 
 
-    def __init__(self, nodeID, networkInterface, VASTInterface):
-        self.nodeID = nodeID
+    def __init__(self, networkInterface, VASTInterface):
+        self.nodeID = None
         self.networkInterface = networkInterface
         self.VAST = VASTInterface
 
 
-    def registerID(self):
+    def initialiseNetworkInterface(self):
+        self.networkInterface.bind()
+
+
+    def registerID(self, gatewayIP, gatewayPort):
         IP = self.networkInterface.getIP()
         port = self.networkInterface.getPort()
-        self.VAST.join(self.nodeID, IP, port)
-        self.networkInterface.bind()
+        message = JoinMessage(IP, port)
+        message.setType('join')
+        self.networkInterface.connect(gatewayIP, gatewayPort)
+        self.networkInterface.send(message)
 
 
     def connect(self, IP, port):
@@ -69,19 +137,35 @@ class VASTNode(object):
     def send(self, destinationNodeID, message):
         #logging.info("VASTNode::send => Node [%s] is sending message with content '%s' to node [%s]" % (self.nodeID, message.getPayload(), destinationNodeID))
         (IP, port) = self.VAST.getIPPort(destinationNodeID)
+        #message.setSenderID(self.getNodeID())
         self.networkInterface.connect(IP, port)
         self.networkInterface.send(message=message)
 
 
     def processSingleMessage(self):
-        #while (self.networkInterface.getNumberOfMessages()):
+        #logging.info("Gateway::processSingleMessage => Number of received messages <%d>" % self.networkInterface.getNumberOfMessages())
+
         if (self.networkInterface.getNumberOfMessages()):
             message = self.networkInterface.getMessage()
-            payload = message.getPayload()
-            senderID = message.getSenderID()
             type = message.getType()
-            logging.info("VASTNode::processSingleMessage => Node [%s] has received message <%s> from node [%s] with content '%s'" % (self.nodeID, type, senderID, payload))
-            # print("Node [%s] has <%d> messages left in queue" % (self.nodeID, self.networkInterface.getNumberOfMessages()) )
+            #logging.info("VASTNode::processSingleMessage => Received message of type <%s>" % type)
+            if (type == 'join'):
+                self.nodeID = message.getNodeID()
+                IP = self.networkInterface.getIP()
+                port = self.networkInterface.getPort()
+                self.VAST.join(IP, port, self.nodeID)
+                registeredNodes = message.getRegisteredNodes()
+                for nodeID in registeredNodes:
+                    (nodeIP, nodePort) = registeredNodes[nodeID]
+                    self.VAST.join(nodeIP, nodePort, nodeID)
+                logging.info("VASTNode::handleMessage => MatcherNode::handleMessage => Received nodeID <%s> from gateway" % self.nodeID)
+            else:
+                payload = message.getPayload()
+                senderID = message.getSenderID()
+                channel = message.getChannel()
+                logging.info("VASTNode::handleMessage => Node [%s] has received message type <%s> for channel <%s> from node [%s] with content '%s'" % (self.nodeID, type, channel, senderID, payload))
+                # logging.info("VASTNode::processSingleMessage => Node [%s] has received message <%s> from node [%s] with content '%s'" % (self.nodeID, type, senderID, payload))
+                # print("Node [%s] has <%d> messages left in queue" % (self.nodeID, self.networkInterface.getNumberOfMessages()) )
 
 
     def processMessages(self):
@@ -90,8 +174,9 @@ class VASTNode(object):
             payload = message.getPayload()
             senderID = message.getSenderID()
             type = message.getType()
-            logging.info("VASTNode::processMessages => Node [%s] has received message <%s> from node [%s] with content '%s'" % (self.nodeID, type, senderID, payload))
-            # print("Node [%s] has <%d> messages left in queue" % (self.nodeID, self.networkInterface.getNumberOfMessages()) )
+            channel = message.getChannel()
+            logging.info("VASTNode::handleMessage => Node [%s] has received message type <%s> for channel <%s> from node [%s] with content '%s'" % (self.nodeID, type, channel, senderID, payload))
+#           # print("Node [%s] has <%d> messages left in queue" % (self.nodeID, self.networkInterface.getNumberOfMessages()) )
 
 
     def receive(self, message, **kwargs):
@@ -105,8 +190,8 @@ class VASTNode(object):
 class MatcherNode(VASTNode):
 
 
-    def __init__(self, nodeID, networkInterface, VASTInterface):
-        self.nodeID = nodeID
+    def __init__(self, networkInterface, VASTInterface):
+        self.nodeID = None
         self.networkInterface = networkInterface
         self.VAST = VASTInterface
         self.channelSubscriptions = defaultdict()
@@ -115,17 +200,20 @@ class MatcherNode(VASTNode):
 
     def handleMessage(self, message):
         type = message.getType()
-        senderID = message.getSenderID()
-        logging.info("Matcher::handleMessage => Matcher handling message <%s> from node <%s>" % (type, senderID))
+        #
+        #logging.info("Matcher::handleMessage => Matcher handling message <%s> from node <%s>" % (type, senderID))
         if type == 'sub':
+            senderID = message.getSenderID()
             channel = message.getChannel()
             logging.info("Matcher::handleMessage => Node <%s> subscribing to channel <%s>" % (senderID, channel))
             self.addChannelSubscription(senderID, channel)
         elif type == 'unsub':
+            senderID = message.getSenderID()
             channel = message.getChannel()
             logging.info("Matcher::handleMessage => Node <%s> unsubscribing from channel <%s>" % (senderID, channel))
             self.removeChannelSubscription(senderID, channel)
         elif type == 'pub':
+            senderID = message.getSenderID()
             channel = message.getChannel()
             payload = message.getPayload()
             logging.info("Matcher::handleMessage => Node <%s> publishing message '%s' to channel <%s>" % (senderID, payload, channel))
@@ -134,21 +222,34 @@ class MatcherNode(VASTNode):
             payload = message.getPayload()
             senderID = message.getSenderID()
             type = message.getType()
-            logging.info("Matcher::handleMessage => Node [%s] has received message <%s> from node [%s] with content '%s'" % (self.nodeID, type, senderID, payload))
+            channel = message.getChannel()
+            logging.info("Matcher::handleMessage => Node [%s] has received message type <%s> for channel <%s> from node [%s] with content '%s'" % (self.nodeID, type, channel, senderID, payload))
         elif type == 'spatialsub':
+            senderID = message.getSenderID()
             area = message.getArea()
             logging.info("Matcher::handleMessage => Node <%s> subscribing to area <%d,%d,%d>" % (senderID, area.position[0], area.position[1],area.radius))
             self.addSpatialSubscription(senderID, area)
         elif type == 'spatialunsub':
+            senderID = message.getSenderID()
             area = message.getArea()
             logging.info("Matcher::handleMessage => Node <%s> unsubscribing from area <%d,%d,%d>" % (senderID, area.position[0], area.position[1],area.radius))
             self.removeSpatialSubscription(senderID, area)
         elif type == 'spatialpub':
+            senderID = message.getSenderID()
             area = message.getArea()
             payload = message.getPayload()
             logging.info("Matcher::handleMessage => MatcherNode::handleMessage => Node <%s> publishing message '%s' to area <%d,%d,%d>" % (senderID, payload, area.position[0], area.position[1],area.radius))
             self.publishSpatial(senderID, area, payload)
-
+        if (type == 'join'):
+            self.nodeID = message.getNodeID()
+            IP = self.networkInterface.getIP()
+            port = self.networkInterface.getPort()
+            self.VAST.join(IP, port, self.nodeID)
+            registeredNodes = message.getRegisteredNodes()
+            for nodeID in registeredNodes:
+                (nodeIP, nodePort) = registeredNodes[nodeID]
+                self.VAST.join(nodeIP, nodePort, nodeID)
+            logging.info("Matcher::handleMessage => MatcherNode::handleMessage => Received nodeID <%s> from gateway" % self.nodeID)
 
     def addChannelSubscription(self, nodeID, channel):
         if (channel in self.channelSubscriptions):

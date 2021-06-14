@@ -1,3 +1,52 @@
+class JoinMessage():
+    def __init__(self, IP, port):
+        self.nodeID = None
+        self.type = None # join, query, matcher
+        self.IP = IP
+        self.port = port
+        self.registeredNodes = {}
+
+
+    def setNodeID(self, nodeID):
+        self.nodeID = nodeID
+
+
+    def getNodeID(self):
+        return self.nodeID
+
+
+    def setIP(self, IP):
+        self.IP = IP
+
+
+    def setPort(self, port):
+        self.port = port
+
+
+    def getIP(self):
+        return self.IP
+
+
+    def getPort(self):
+        return self.port
+
+
+    def getType(self):
+        return self.type
+
+
+    def setType(self, type):
+        self.type = type
+
+
+    def setRegisteredNodes(self, nodes):
+        self.registeredNodes = nodes
+
+
+    def getRegisteredNodes(self):
+        return self.registeredNodes
+
+
 class Message(object):
 
 

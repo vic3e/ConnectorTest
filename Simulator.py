@@ -3,7 +3,7 @@ import logging
 import asyncio
 
 from Node import MatcherNode
-from Node import VASTNode, SPSNode
+from Node import VASTNode, SPSNode, Gateway
 from VAST import VASTInterface
 from Message import Message
 from Connector import *
@@ -19,6 +19,7 @@ async def work(node):
 
 
 async def simulate(matcher, nodes, loop):
+    await asyncio.sleep(2)
     matcherNodeID = matcher.getNodeID()
 
     # Channel based pub/sub
@@ -27,54 +28,54 @@ async def simulate(matcher, nodes, loop):
     logging.info("")
 
     # Node '0' subscribes to channel 'test'
-    message = Message(senderNodeID='0', type='sub', channel='test', payload=None)
+    message = Message(senderNodeID=matcher.getNodeID(), type='sub', channel='test', payload=None)
     matcher.send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
     # Node '1' subscribes to channel 'test2'
-    message = Message(senderNodeID='1', type='sub', channel='test', payload=None)
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='sub', channel='test', payload=None)
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
     # Node '1' subscribes to channel 'test2'
-    message = Message(senderNodeID='2', type='sub', channel='test2', payload=None)
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='sub', channel='test2', payload=None)
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    message = Message(senderNodeID='2', type='pub', channel='test2', payload='publication message 1')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='pub', channel='test2', payload='publication message 1')
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    message = Message(senderNodeID='1', type='pub', channel='test2', payload='publication message 2')
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='pub', channel='test2', payload='publication message 2')
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    message = Message(senderNodeID='2', type='pub', channel='test', payload='publication message 3')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='pub', channel='test', payload='publication message 3')
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
     # Node '0' unsubscribes from channel 'test'
-    message = Message(senderNodeID='0', type='unsub', channel='test')
+    message = Message(senderNodeID=matcher.getNodeID(), type='unsub', channel='test')
     matcher.send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
-    message = Message(senderNodeID='2', type='pub', channel='test', payload='publication message 4')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='pub', channel='test', payload='publication message 4')
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
     # Node '0' unsubscribes from channel 'test'
-    message = Message(senderNodeID='1', type='unsub', channel='test')
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='unsub', channel='test')
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
 
     await asyncio.sleep(simulationTick)
 
-    message = Message(senderNodeID='2', type='pub', channel='test', payload='publication message 5')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='pub', channel='test', payload='publication message 5')
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
 
     await asyncio.sleep(simulationTick)
 
     # Node '2' subscribes to channel 'test'
-    message = Message(senderNodeID='2', type='unsub', channel='test2')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='unsub', channel='test2')
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
 
@@ -87,7 +88,7 @@ async def simulate(matcher, nodes, loop):
     # Node '0' subscribes to area (x,y,r)=(0,0,10)
     pos1 = (0, 0)
     radius1 = 10
-    message = Message(senderNodeID='0', type='spatialsub')
+    message = Message(senderNodeID=matcher.getNodeID(), type='spatialsub')
     message.setArea(area=Area(pos1, radius1))
     matcher.send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -95,7 +96,7 @@ async def simulate(matcher, nodes, loop):
     # Node '1' subscribes to area (x,y,r)=(0,5,5)
     pos2 = (0, 5)
     radius2 = 5
-    message = Message(senderNodeID='1', type='spatialsub')
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='spatialsub')
     message.setArea(area=Area(pos2, radius2))
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -103,7 +104,7 @@ async def simulate(matcher, nodes, loop):
     # Node '2' subscribes to area (x,y,r)=(0,5,5)
     pos2 = (0, 5)
     radius2 = 5
-    message = Message(senderNodeID='2', type='spatialsub')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='spatialsub')
     message.setArea(area=Area(pos2, radius2))
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -111,7 +112,7 @@ async def simulate(matcher, nodes, loop):
     # Node '1' publishes to area (x,y,r)=(0,5,1)
     pos2 = (0, 5)
     radius3 = 1
-    message = Message(senderNodeID='1', type='spatialpub')
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='spatialpub')
     message.setArea(area=Area(pos2, radius3))
     message.setPayload(payload='spatial publication message 1')
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
@@ -120,7 +121,7 @@ async def simulate(matcher, nodes, loop):
     # Node '2' unsubscribes from area (x,y,r)=(0,5,5)
     pos2 = (0, 5)
     radius2 = 5
-    message = Message(senderNodeID='2', type='spatialunsub')
+    message = Message(senderNodeID=nodes[1].getNodeID(), type='spatialunsub')
     message.setArea(area=Area(pos2, radius2))
     nodes[1].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -128,7 +129,7 @@ async def simulate(matcher, nodes, loop):
     # Node '0' publishes to area (x,y,r)=(0,5,1)
     pos2 = (0, 5)
     radius3 = 1
-    message = Message(senderNodeID='0', type='spatialpub')
+    message = Message(senderNodeID=matcher.getNodeID(), type='spatialpub')
     message.setArea(area=Area(pos2, radius3))
     message.setPayload(payload='spatial publication message 2')
     matcher.send(destinationNodeID=matcherNodeID, message=message)
@@ -137,7 +138,7 @@ async def simulate(matcher, nodes, loop):
     # Node '0' publishes to area (x,y,r)=(0,-5,1)
     pos3 = (0, -5)
     radius3 = 1
-    message = Message(senderNodeID='0', type='spatialpub')
+    message = Message(senderNodeID=matcher.getNodeID(), type='spatialpub')
     message.setArea(area=Area(pos3, radius3))
     message.setPayload(payload='spatial publication message 3')
     matcher.send(destinationNodeID=matcherNodeID, message=message)
@@ -146,7 +147,7 @@ async def simulate(matcher, nodes, loop):
     # Node '0' publishes to area (x,y,r)=(0,20,1)
     pos4 = (0, 20)
     radius3 = 1
-    message = Message(senderNodeID='0', type='spatialpub')
+    message = Message(senderNodeID=matcher.getNodeID(), type='spatialpub')
     message.setArea(area=Area(pos4, radius3))
     message.setPayload(payload='spatial publication message 4')
     matcher.send(destinationNodeID=matcherNodeID, message=message)
@@ -156,7 +157,7 @@ async def simulate(matcher, nodes, loop):
     # Node '0' unsubscribes from area (x,y,r)=(0,0,10)
     pos1 = (0, 0)
     radius1 = 10
-    message = Message(senderNodeID='0', type='spatialunsub')
+    message = Message(senderNodeID=matcher.getNodeID(), type='spatialunsub')
     message.setArea(area=Area(pos1, radius1))
     matcher.send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -164,7 +165,7 @@ async def simulate(matcher, nodes, loop):
     # Node '1' unsubscribes from area (x,y,r)=(0,5,5)
     pos2 = (0, 5)
     radius2 = 5
-    message = Message(senderNodeID='1', type='spatialunsub')
+    message = Message(senderNodeID=nodes[0].getNodeID(), type='spatialunsub')
     message.setArea(area=Area(pos2, radius2))
     nodes[0].send(destinationNodeID=matcherNodeID, message=message)
     await asyncio.sleep(simulationTick)
@@ -274,36 +275,46 @@ def main():
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
-    VAST = VASTInterface()
-    matcherNodeID = '0'
+    gatewayIP = '127.0.0.1'
+    gatewayPort = 10000
 
+    VAST = VASTInterface()
     RealNetwork = True
 
     if (RealNetwork):
-        matcher = MatcherNode(nodeID=matcherNodeID, networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12000), VASTInterface=VAST)
-        nodes = [VASTNode(nodeID='1', networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12001), VASTInterface=VAST),
-                 VASTNode(nodeID='2', networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12002), VASTInterface=VAST)]
+        gateway = Gateway(RealNetworkInterface(senderIP=gatewayIP, senderPort=gatewayPort))
+        matcher = MatcherNode(networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12000), VASTInterface=VAST)
+        nodes = [VASTNode(networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12001), VASTInterface=VAST),
+                 VASTNode(networkInterface=RealNetworkInterface(senderIP='127.0.0.1', senderPort=12002), VASTInterface=VAST)]
 
 
     else:
-        matcher = MatcherNode(nodeID=matcherNodeID,
-                              networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1000'),
+        gateway = Gateway(RealNetworkInterface(senderIP=gatewayIP, senderPort=gatewayPort))
+        matcher = MatcherNode(networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort=12000),
                               VASTInterface=VAST)
-        nodes = [VASTNode(nodeID='1', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1001'),
+        nodes = [VASTNode(networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort=12001),
                           VASTInterface=VAST),
-                 VASTNode(nodeID='2', networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort='1002'),
+                 VASTNode(networkInterface=FakeNetworkInterface(senderIP='127.0.0.1', senderPort=12002),
                           VASTInterface=VAST)]
 
-
-    # nodes connect to network infrastructure
-    matcher.registerID()
+    # Initialise network interface
+    gateway.initialiseNetworkInterface()
+    matcher.initialiseNetworkInterface()
     for node in nodes:
-        node.registerID()
+        node.initialiseNetworkInterface()
 
+    # Matcher obtain nodeID from gateway
+    matcher.registerID(gatewayIP, gatewayPort)
+    matcherNodeID = matcher.getNodeID()
+
+    # Nodes obtain nodeIDs from gateway
+    for node in nodes:
+        node.registerID(gatewayIP, gatewayPort)
 
     loop = asyncio.get_event_loop()
     try:
         asyncio.ensure_future(work(matcher))
+        asyncio.ensure_future(work(gateway))
         for node in nodes:
             asyncio.ensure_future(work(node))
         asyncio.ensure_future(simulate(matcher, nodes, loop))

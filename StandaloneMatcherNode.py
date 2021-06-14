@@ -3,11 +3,8 @@ import getopt
 
 
 from Node import MatcherNode
-from Node import VASTNode, SPSNode
 from VAST import VASTInterface
-from Message import Message
 from Connector import *
-from Area import Area
 
 
 messageProcessingTick = 0.001
@@ -24,7 +21,7 @@ def main(argv):
     IP = ''
     port = ''
     try:
-        opts, args = getopt.getopt(argv, "hi:p:c:s:")
+        opts, args = getopt.getopt(argv, "hi:p:")
     except getopt.GetoptError:
         print
         'singlenode.py -i <IP address> -p <port>'
@@ -45,14 +42,18 @@ def main(argv):
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
-    VAST = VASTInterface()
-    matcherNodeID = 12000
-    VAST.join(matcherNodeID, '127.0.0.1',12000)
-    VAST.join(12001, '127.0.0.1',12001)
-    VAST.join(12002, '127.0.0.1',12002)
+    gatewayIP = '127.0.0.1'
+    gatewayPort = 49152
 
-    matcher = MatcherNode(nodeID=matcherNodeID, networkInterface=RealNetworkInterface(senderIP=IP, senderPort=12000), VASTInterface=VAST)
-    matcher.registerID()
+    VAST = VASTInterface()
+    #matcherNodeID = 0
+    #VAST.join('127.0.0.1', 49153, matcherNodeID)
+    #VAST.join('127.0.0.1', 49154, 1)
+    #VAST.join('127.0.0.1', 49155, 2)
+
+    matcher = MatcherNode(networkInterface=RealNetworkInterface(senderIP=IP, senderPort=49153), VASTInterface=VAST)
+    matcher.initialiseNetworkInterface()
+    matcher.registerID(gatewayIP, gatewayPort)
 
     loop = asyncio.get_event_loop()
     try:

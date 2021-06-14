@@ -90,6 +90,8 @@ class RealNetworkInterface(NetworkInterface):
 
         self.destinationIP = destinationIP
         self.destinationPort = destinationPort
+        #print(self.destinationIP)
+        #print(self.destinationPort)
         #logging.info("RealNetwork::connect => Connecting to (%s:%d)" % (self.destinationIP, self.destinationPort))
         self.clientSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -99,12 +101,14 @@ class RealNetworkInterface(NetworkInterface):
 
 
     def send(self, message):
-        #logging.info("RealNetwork::send => Sending message '%s' to (%s:%d)" % (message.getPayload(), self.destinationIP, self.destinationPort))
+        #logging.info("RealNetwork::send => Sending message '%s' to (%s:%d)" % (message.getType(), self.destinationIP, self.destinationPort))
         data = codecs.encode(pickle.dumps(message), "base64")
-        self.clientSock.sendto(data, (self.destinationIP, self.destinationPort))
+        result = self.clientSock.sendto(data, (self.destinationIP, self.destinationPort))
+        #logging.info("RealNetwork::send => Results <%s>" % result)
 
 
     def receive(self, message):
+        #logging.info("RealNetwork::receive => Received a message" )
         self.receiveQueue.put(message)
 
 
@@ -114,11 +118,6 @@ class RealNetworkInterface(NetworkInterface):
             lambda: ServerProtocol(self.receiveQueue), local_addr=(self.senderIP, self.senderPort))
         self.loop.run_until_complete(self.listen)
 
-        #self.transport, self.protocol
-      #  try:
-      #      self.loop.run_forever()
-      #  except KeyboardInterrupt:
-      #      pass
 
     def getIP(self):
         return self.senderIP
@@ -146,8 +145,8 @@ class FakeNetworkInterface(NetworkInterface):
 
 
     def connect(self, destinationIP, destinationPort):
-        #logging.info("FakeNetwork::connect => Connecting (%s:%s) to (%s:%s)" % (self.senderIP, self.senderPort, destinationIP, destinationPort))
-        self.destinationInterface = interfaces[destinationIP+":"+destinationPort]
+        logging.info("FakeNetwork::connect => Connecting (%s:%s) to (%s:%s)" % (self.senderIP, self.senderPort, destinationIP, destinationPort))
+        self.destinationInterface = interfaces[destinationIP+":"+str(destinationPort)]
 
 
     def disconnect(self):
@@ -156,16 +155,16 @@ class FakeNetworkInterface(NetworkInterface):
 
     def bind(self):
         logging.info("FakeNetworkInterface::bind => Registering (IP:Port) = (%s:%s )" % (self.senderIP, self.senderPort))
-        interfaces[self.senderIP+":"+self.senderPort] = self
+        interfaces[self.senderIP+":"+str(self.senderPort)] = self
 
 
     def send(self, message):
-        logging.debug("Sending message '%s' to destinationInterface (%s:%s)" % (message, self.destinationInterface.getIP(), self.destinationInterface.getPort()))
+        #logging.info("Sending message '%s' to destinationInterface (%s:%s)" % (message, self.destinationInterface.getIP(), self.destinationInterface.getPort()))
         self.destinationInterface.receive(deepcopy(message))
 
 
     def receive(self, message):
-        logging.debug("Receive Queue of NIC (%s:%s) has <%d> messages" % (self.senderIP, self.senderPort, self.receiveQueue.qsize()))
+        #logging.debug("Receive Queue of NIC (%s:%s) has <%d> messages" % (self.senderIP, self.senderPort, self.receiveQueue.qsize()))
         self.receiveQueue.put(message)
         logging.debug("Receive Queue of NIC (%s:%s) has <%d> messages" % (self.senderIP, self.senderPort, self.receiveQueue.qsize()))
 
